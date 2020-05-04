@@ -1,42 +1,49 @@
 const { io } = require('../server');
+const { Users } = require('../classes/users');
+const { createMessage } = require('../utils/utils');
 
+const users = new Users();
 
 io.on('connection', (client) => {
+  console.log('Usuario conectado');
 
-    console.log('Usuario conectado');
+  client.on('chatIn', (user, callback) => {
+    if (!user) {
+      return callback({
+        error: true,
+        msg: 'Nombre es necesario'
+      })
+    }
 
-    client.emit('enviarMensaje', {
-        usuario: 'Administrador',
-        mensaje: 'Bienvenido a esta aplicación'
-    });
+    // console.log(user);
+    client.join(user.room);
 
+    users.addUsers(client.id, user.name, user.room);
 
+    client.broadcast.to(user.room).emit('peopleList', users.getPeopleByRoom(user.room));
+    callback(users.getPeopleByRoom(user.room));
+  });
 
-    client.on('disconnect', () => {
-        console.log('Usuario desconectado');
-    });
+  client.on('createMessage', (data) => {
+    let user = users.getUserById(client.id);
 
-    // Escuchar el cliente
-    client.on('enviarMensaje', (data, callback) => {
+    let message = createMessage(user.name, data.message);
+    client.broadcast.to(user.room).emit('createMessage', message);
+  });
 
-        console.log(data);
+  client.on('disconnect', () => {
+    let deletdUser = users.deleteUser(client.id);
 
-        client.broadcast.emit('enviarMensaje', data);
-
-
-        // if (mensaje.usuario) {
-        //     callback({
-        //         resp: 'TODO SALIO BIEN!'
-        //     });
-
-        // } else {
-        //     callback({
-        //         resp: 'TODO SALIO MAL!!!!!!!!'
-        //     });
-        // }
-
+    client.broadcast.to(deletdUser.room).emit('createMessage', createMessage('Admin', `${deletdUser.name} abandonó el chat`));
+    client.broadcast.to(deletdUser.room).emit('peopleList', users.getPeopleByRoom(deletdUser.room));
 
 
-    });
+  })
 
+  client.on('privateMessage', data => {
+    let user = users.getUserById(client.id);
+    client.broadcast.to(data.to).emit('privateMessage', createMessage(user.name, data.message));
+  });
+
+  
 });
