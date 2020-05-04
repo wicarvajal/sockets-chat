@@ -2,45 +2,57 @@ var socket = io();
 
 var params = new URLSearchParams(window.location.search);
 
-if (!params.has('name') || !params.has('room')) {
-  window.location = 'index.html';
-  throw new Error('El nombre de usuario y sala son necesarios');
+if (!params.has('nombre') || !params.has('sala')) {
+    window.location = 'index.html';
+    throw new Error('El nombre y sala son necesarios');
 }
 
-var user = {
-  name: params.get('name'),
-  room: params.get('room')
-}
+var usuario = {
+    nombre: params.get('nombre'),
+    sala: params.get('sala')
+};
 
-socket.on('connect', function () {
-  console.log('Conectado al servidor');
 
-  socket.emit('chatIn', user, function (res) {
-    console.log('Usuarios conectados', res);
-  })
+
+socket.on('connect', function() {
+    console.log('Conectado al servidor');
+
+    socket.emit('entrarChat', usuario, function(resp) {
+        console.log('Usuarios conectados', resp);
+    });
+
 });
 
-socket.on('disconnect', function () {
-  console.log('Perdimos conexión con el servidor');
+// escuchar
+socket.on('disconnect', function() {
+
+    console.log('Perdimos conexión con el servidor');
+
 });
 
-socket.emit('sendMessage', {
-  usuario: 'Fernando',
-  mensaje: 'Hola Mundo'
-}, function (resp) {
-  console.log('respuesta server: ', resp);
+
+// Enviar información
+// socket.emit('crearMensaje', {
+//     nombre: 'Fernando',
+//     mensaje: 'Hola Mundo'
+// }, function(resp) {
+//     console.log('respuesta server: ', resp);
+// });
+
+// Escuchar información
+socket.on('crearMensaje', function(mensaje) {
+    console.log('Servidor:', mensaje);
 });
 
-socket.on('createMessage', function (mensaje) {
-  console.log('Servidor:', mensaje);
+// Escuchar cambios de usuarios
+// cuando un usuario entra o sale del chat
+socket.on('listaPersona', function(personas) {
+    console.log(personas);
 });
 
-socket.on('peopleList', function (people) {
-  console.log(people);
+// Mensajes privados
+socket.on('mensajePrivado', function(mensaje) {
+
+    console.log('Mensaje Privado:', mensaje);
+
 });
-
-// msg privado
-
-socket.on('privateMessage', function(msg) {
-  console.log('Private Message: ', msg);
-})
