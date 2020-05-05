@@ -15,28 +15,31 @@ io.on('connection', (client) => {
       })
     }
 
-    // console.log(user);
+    console.log(user);
     client.join(user.room);
 
     users.addUsers(client.id, user.name, user.room);
 
-    client.broadcast.to(user.room).emit('peopleList', users.getPeopleByRoom(user.room));
+    client.broadcast.to(user.room).emit('listUsers', users.getPeopleByRoom(user.room));
+    client.broadcast.to(user.room).emit('createMessage', createMessage('Admin', `${user.name} ingresó al chat`));
     callback(users.getPeopleByRoom(user.room));
   });
 
-  client.on('createMessage', (data) => {
+  client.on('createMessage', (data, callback) => {
     let user = users.getUserById(client.id);
 
     let message = createMessage(user.name, data.message);
     client.broadcast.to(user.room).emit('createMessage', message);
+    callback(message);
   });
 
   client.on('disconnect', () => {
     let deletdUser = users.deleteUser(client.id);
 
-    client.broadcast.to(deletdUser.room).emit('createMessage', createMessage('Admin', `${deletdUser.name} abandonó el chat`));
-    client.broadcast.to(deletdUser.room).emit('peopleList', users.getPeopleByRoom(deletdUser.room));
+    console.log(deletdUser);
 
+    client.broadcast.to(deletdUser.room).emit('createMessage', createMessage('Admin', `${deletdUser.name} abandonó el chat`));
+    client.broadcast.to(deletdUser.room).emit('listUsers', users.getPeopleByRoom(deletdUser.room));
 
   })
 
